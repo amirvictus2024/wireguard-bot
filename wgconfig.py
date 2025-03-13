@@ -51,6 +51,14 @@ def generate_public_key(private_key):
         return SERVER_PUBLIC_KEYS.get('bronze')
 
 def get_random_ip(cidr):
+    # اگر از ماژول range استفاده شده، آن را وارد می‌کنیم
+    try:
+        from range import parse_ip_range
+        cidr = parse_ip_range(cidr)
+    except ImportError:
+        # اگر ماژول موجود نباشد، خودمان پردازش می‌کنیم
+        cidr = cidr.replace('"', '').replace("'", "").strip()
+        
     network = ipaddress.ip_network(cidr)
     # Get a random host address from network
     host_bits = network.max_prefixlen - network.prefixlen
@@ -67,24 +75,32 @@ def generate_wireguard_config(location_type, locations):
     # Generate a private key
     private_key = generate_private_key()
 
-
     # Use the correct server public key based on location_type
     public_key = generate_public_key(private_key)
 
-    # Select random IPs from ranges
-    ipv4_endpoint = get_random_ip(random.choice(location['ipv4_ranges']))
+    # Select a single IPv4 range as defined in range.py
+    ipv4_range = location['ipv4_ranges'][0]
+    ipv4_endpoint = get_random_ip(ipv4_range)
 
-    # Generate DNS addresses (one fixed, two from ranges)
+    # Generate DNS addresses (one fixed, one from range)
     dns_fixed = "78.157.42.100"
-    dns_ipv4 = get_random_ip(random.choice(location['ipv4_ranges']))
-    dns_ipv6 = get_random_ip(random.choice(location['ipv6_ranges']))
+    dns_ipv4 = get_random_ip(ipv4_range)
+    
+    # Use the single IPv6 range if available or fallback
+    if location['ipv6_ranges'] and len(location['ipv6_ranges']) > 0:
+        ipv6_range = location['ipv6_ranges'][0]
+        dns_ipv6 = get_random_ip(ipv6_range)
+        address_ipv6_1 = get_random_ip(ipv6_range)
+        address_ipv6_2 = get_random_ip(ipv6_range)
+    else:
+        dns_ipv6 = "2001:db8::1"
+        address_ipv6_1 = "2001:db8::2"
+        address_ipv6_2 = "2001:db8::3"
 
     # Generate addresses
     address_fixed1 = "10.202.10.10"
     address_fixed2 = "10.0.0.2/24"
-    address_ipv4 = get_random_ip(random.choice(location['ipv4_ranges']))
-    address_ipv6_1 = get_random_ip(random.choice(location['ipv6_ranges']))
-    address_ipv6_2 = get_random_ip(random.choice(location['ipv6_ranges']))
+    address_ipv4 = get_random_ip(ipv4_range)
 
     # Calculate expiry date (still needed for internal tracking)
     expiry_date = datetime.now() + timedelta(days=CONFIG_VALIDITY_DAYS)

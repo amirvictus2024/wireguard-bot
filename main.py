@@ -20,10 +20,11 @@ DB_FILE = "database.json"
 # Function to check if user is an admin
 def is_admin(user_id):
     db = load_database()
-    return str(user_id) == str(ADMIN_ID) or user_id in db['settings'].get('admins', [])
+    admins = db['settings'].get('admins', [])
+    return str(user_id) == str(ADMIN_ID) or str(user_id) in [str(admin) for admin in admins]
 
 # States for conversation
-MAIN_MENU, ADMIN_PANEL, ADD_BALANCE, BUY_CONFIG, SUPPORT, USER_ACCOUNT, LOCATION_SELECT, CONFIG_CONFIRM, REFERRAL = range(9)
+MAIN_MENU, ADMIN_PANEL, ADD_BALANCE, BUY_CONFIG, SUPPORT, USER_ACCOUNT, LOCATION_SELECT, CONFIG_CONFIRM, REFERRAL, ABOUT_US = range(10)
 
 # Default referral reward
 DEFAULT_REFERRAL_REWARD = 2000
@@ -77,7 +78,7 @@ def get_user(user_id, data=None):
     return data['users'][user_id_str]
 
 # Keyboard Markups
-def main_menu_keyboard():
+def main_menu_keyboard(user_id=None):
     keyboard = [
         [
             InlineKeyboardButton("🚀 خرید کانفیگ", callback_data='buy_config')
@@ -89,11 +90,14 @@ def main_menu_keyboard():
         [
             InlineKeyboardButton("📞 پشتیبانی", callback_data='support'),
             InlineKeyboardButton("🎁 رفرال", callback_data='referral')
+        ],
+        [
+            InlineKeyboardButton("ℹ️ درباره ما", callback_data='about_us')
         ]
     ]
 
-    # Add admin panel button for admin
-    if is_admin(ADMIN_ID):
+    # Add admin panel button for admins
+    if user_id and is_admin(user_id):
         keyboard.append([InlineKeyboardButton("⚙️ پنل مدیریت", callback_data='admin_panel')])
 
     return InlineKeyboardMarkup(keyboard)
@@ -245,7 +249,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(
         welcome_text,
-        reply_markup=main_menu_keyboard()
+        reply_markup=main_menu_keyboard(user.id)
     )
 
     return MAIN_MENU
@@ -296,6 +300,67 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 بازگشت", callback_data='back_to_main')]])
         )
         return REFERRAL
+        
+    elif data == 'about_us':
+        about_text = (
+            "🎮 *خدمات گیمینگ وایرگارد ما*\n\n"
+            "سلام به همه گیمرهای عزیز! 👋\n\n"
+            "🔹 *سیستم هوشمند وایرگارد*\n"
+            "ما ارائه‌دهنده کانفیگ‌های اختصاصی وایرگارد هستیم که با بهره‌گیری از فناوری نسل ششم اینترنت (IPv6)، "
+            "تجربه‌ای منحصر به فرد را برای شما فراهم می‌کنیم.\n\n"
+            "🎯 *مزایای ویژه*:\n"
+            "• کاهش چشمگیر پینگ تا حد باورنکردنی ۲۰! 😮\n"
+            "• تضمین رجیستر یا بازگشت کامل هزینه\n"
+            "• قرارگیری در لابی‌های ایرانی در بیشتر بازی‌ها (در سرویس‌های نقره‌ای و طلایی)\n"
+            "• پشتیبانی حرفه‌ای در تمام طول دوره اشتراک\n"
+            "• سازگار با تمامی دستگاه‌ها (PC, Mobile, Console)\n\n"
+            "📌 *نکات مهم*:\n"
+            "• برای نسخه‌های غیراصلی مانند نسخه کره‌ای، تنها سرویس الماسی مؤثر است\n"
+            "• تمامی سرویس‌ها کاملاً اختصاصی و بدون امکان تست هستند\n"
+            "• خدمات ما تنها برای کاربران داخل ایران بهینه‌سازی شده است\n\n"
+            "🏆 *معرفی سرویس‌ها*:\n\n"
+            "🥇 *سرویس طلایی* - بهترین گزینه برای اینترنت‌های ضعیف‌تر\n"
+            "🥈 *سرویس نقره‌ای* - مناسب برای اینترنت‌های استاندارد\n"
+            "💎 *سرویس الماسی* - بهینه‌سازی شده برای سرورهای آمریکا، کره و نسخه‌های خاص\n\n"
+            "هر دو سرویس طلایی و نقره‌ای در تمامی حالت‌های بازی (کلاسیک، TDM و...) در سرورهای آسیا، اروپا و خاورمیانه عملکرد عالی دارند.\n\n"
+            "با ما تجربه گیمینگ خود را به سطح دیگری ارتقا دهید! 🚀"
+        )
+        
+        try:
+            await query.edit_message_text(
+                about_text,
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 بازگشت", callback_data='back_to_main')]]),
+                parse_mode='Markdown'
+            )
+        except Exception as e:
+            logger.error(f"Error in displaying about us with Markdown: {e}")
+            # در صورت مشکل با Markdown، متن را بدون فرمت نشان می‌دهیم
+            await query.edit_message_text(
+                "🎮 خدمات گیمینگ وایرگارد ما\n\n"
+                "سلام به همه گیمرهای عزیز! 👋\n\n"
+                "🔹 سیستم هوشمند وایرگارد\n"
+                "ما ارائه‌دهنده کانفیگ‌های اختصاصی وایرگارد هستیم که با بهره‌گیری از فناوری نسل ششم اینترنت (IPv6)، "
+                "تجربه‌ای منحصر به فرد را برای شما فراهم می‌کنیم.\n\n"
+                "🎯 مزایای ویژه:\n"
+                "• کاهش چشمگیر پینگ تا حد باورنکردنی ۲۰! 😮\n"
+                "• تضمین رجیستر یا بازگشت کامل هزینه\n"
+                "• قرارگیری در لابی‌های ایرانی در بیشتر بازی‌ها (در سرویس‌های نقره‌ای و طلایی)\n"
+                "• پشتیبانی حرفه‌ای در تمام طول دوره اشتراک\n"
+                "• سازگار با تمامی دستگاه‌ها (PC, Mobile, Console)\n\n"
+                "📌 نکات مهم:\n"
+                "• برای نسخه‌های غیراصلی مانند نسخه کره‌ای، تنها سرویس الماسی مؤثر است\n"
+                "• تمامی سرویس‌ها کاملاً اختصاصی و بدون امکان تست هستند\n"
+                "• خدمات ما تنها برای کاربران داخل ایران بهینه‌سازی شده است\n\n"
+                "🏆 معرفی سرویس‌ها:\n\n"
+                "🥇 سرویس طلایی - بهترین گزینه برای اینترنت‌های ضعیف‌تر\n"
+                "🥈 سرویس نقره‌ای - مناسب برای اینترنت‌های استاندارد\n"
+                "💎 سرویس الماسی - بهینه‌سازی شده برای سرورهای آمریکا، کره و نسخه‌های خاص\n\n"
+                "هر دو سرویس طلایی و نقره‌ای در تمامی حالت‌های بازی (کلاسیک، TDM و...) در سرورهای آسیا، اروپا و خاورمیانه عملکرد عالی دارند.\n\n"
+                "با ما تجربه گیمینگ خود را به سطح دیگری ارتقا دهید! 🚀",
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 بازگشت", callback_data='back_to_main')]])
+            )
+            
+        return ABOUT_US
 
     elif data == 'add_balance':
         db = load_database()
@@ -457,19 +522,28 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             else:
                 text = "💬 برای ارتباط با پشتیبانی، لطفا پیام خود را همین‌جا ارسال کنید."
 
+            # Set user in support chat mode
+            context.user_data['in_support_chat'] = True
+
             await query.edit_message_text(
                 text,
-                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 بازگشت", callback_data='back_to_main')]])
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("🔙 بازگشت", callback_data='exit_support')]
+                ])
             )
         except Exception as e:
             logger.error(f"Error getting admin info: {e}")
             await query.edit_message_text(
                 "💬 برای ارتباط با پشتیبانی، لطفا پیام خود را ارسال کنید.",
-                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 بازگشت", callback_data='back_to_main')]])
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("🔙 بازگشت", callback_data='exit_support')]
+                ])
             )
+        
         return SUPPORT
 
     elif data == 'admin_panel':
+        # Check admin access properly
         if not is_admin(user_id):
             await query.edit_message_text(
                 "⛔ شما دسترسی به پنل مدیریت را ندارید.",
@@ -487,7 +561,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
             amount = int(data.replace('balance_plan_', ''))
             db = load_database()
-            card_number = db['settings']['card_number']
+            card_number = db['settings'].get('card_number', CARD_NUMBER)
             card_holder = db['settings'].get('card_holder', 'نام و نام خانوادگی')
 
             # اسکیپ کاراکترهای خاص در فرمت Markdown
@@ -499,19 +573,33 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 escaped_card_number = escaped_card_number.replace(char, f"\\{char}")
                 escaped_card_holder = escaped_card_holder.replace(char, f"\\{char}")
 
-            await query.edit_message_text(
-                f"💰 افزایش موجودی - {amount} تومان\n\n"
-                f"💳 لطفا مبلغ {amount} تومان را به شماره کارت زیر واریز کنید:\n\n"
-                f"💳 شماره کارت: `{escaped_card_number}`\n"
-                f"👤 به نام: {escaped_card_holder}\n\n"
-                "📸 پس از واریز، لطفا تصویر رسید پرداخت را ارسال کنید.",
-                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 بازگشت", callback_data='add_balance')]]),
-                parse_mode='MarkdownV2'
-            )
+            try:
+                await query.edit_message_text(
+                    f"💰 افزایش موجودی - {amount} تومان\n\n"
+                    f"💳 لطفا مبلغ {amount} تومان را به شماره کارت زیر واریز کنید:\n\n"
+                    f"💳 شماره کارت: `{escaped_card_number}`\n"
+                    f"👤 به نام: {escaped_card_holder}\n\n"
+                    "📸 پس از واریز، لطفا تصویر رسید پرداخت را ارسال کنید.",
+                    reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 بازگشت", callback_data='add_balance')]]),
+                    parse_mode='MarkdownV2'
+                )
+            except Exception as e:
+                logger.error(f"Error in Markdown formatting: {e}")
+                # Fallback to plain text if Markdown fails
+                await query.edit_message_text(
+                    f"💰 افزایش موجودی - {amount} تومان\n\n"
+                    f"💳 لطفا مبلغ {amount} تومان را به شماره کارت زیر واریز کنید:\n\n"
+                    f"💳 شماره کارت: {card_number}\n"
+                    f"👤 به نام: {card_holder}\n\n"
+                    "📸 پس از واریز، لطفا تصویر رسید پرداخت را ارسال کنید.",
+                    reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 بازگشت", callback_data='add_balance')]])
+                )
+                
             context.user_data['payment_amount'] = amount
             return ADD_BALANCE
 
-        except ValueError:
+        except ValueError as e:
+            logger.error(f"Error in balance plan: {e}")
             await query.edit_message_text(
                 "❌ خطا در انتخاب طرح. لطفا دوباره تلاش کنید.",
                 reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 بازگشت", callback_data='add_balance')]])
@@ -529,12 +617,12 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ADD_BALANCE
 
     elif data == 'manage_admins':
-        if user_id != ADMIN_ID:  # Only main admin can manage other admins
+        if not is_admin(user_id):  # Any admin can manage other admins
             await query.edit_message_text(
-                "⛔ فقط ادمین اصلی می‌تواند به این بخش دسترسی داشته باشد.",
-                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 بازگشت", callback_data='back_to_admin')]])
+                "⛔ شما دسترسی به پنل مدیریت را ندارید.",
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 بازگشت", callback_data='back_to_main')]])
             )
-            return ADMIN_PANEL
+            return MAIN_MENU
 
         db = load_database()
         admins = db['settings'].get('admins', [])
@@ -560,8 +648,8 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ADMIN_PANEL
 
     elif data == 'add_admin':
-        if user_id != ADMIN_ID:
-            return ADMIN_PANEL
+        if not is_admin(user_id):
+            return MAIN_MENU
 
         await query.edit_message_text(
             "👥 افزودن ادمین جدید\n\n"
@@ -572,8 +660,8 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ADMIN_PANEL
 
     elif data == 'remove_admin':
-        if user_id != ADMIN_ID:
-            return ADMIN_PANEL
+        if not is_admin(user_id):
+            return MAIN_MENU
 
         db = load_database()
         admins = db['settings'].get('admins', [])
@@ -765,8 +853,8 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ADMIN_PANEL
 
     elif data.startswith('del_admin_'):
-        if user_id != ADMIN_ID:
-            return ADMIN_PANEL
+        if not is_admin(user_id):
+            return MAIN_MENU
 
         admin_to_remove = data.replace('del_admin_', '')
 
@@ -843,7 +931,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Admin panel options
     elif data == 'change_card':
-        if user_id != ADMIN_ID:
+        if not is_admin(user_id):
             return MAIN_MENU
 
         await query.edit_message_text(
@@ -857,7 +945,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ADMIN_PANEL
 
     elif data == 'change_card_number':
-        if user_id != ADMIN_ID:
+        if not is_admin(user_id):
             return MAIN_MENU
 
         await query.edit_message_text(
@@ -868,7 +956,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ADMIN_PANEL
 
     elif data == 'change_card_holder':
-        if user_id != ADMIN_ID:
+        if not is_admin(user_id):
             return MAIN_MENU
 
         await query.edit_message_text(
@@ -879,7 +967,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ADMIN_PANEL
 
     elif data == 'add_user_balance':
-        if user_id != ADMIN_ID:
+        if not is_admin(user_id):
             return MAIN_MENU
 
         await query.edit_message_text(
@@ -891,7 +979,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ADMIN_PANEL
 
     elif data == 'manage_servers':
-        if user_id != ADMIN_ID:
+        if not is_admin(user_id):
             return MAIN_MENU
 
         await query.edit_message_text(
@@ -902,7 +990,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ADMIN_PANEL
 
     elif data == 'change_server_prices':
-        if user_id != ADMIN_ID:
+        if not is_admin(user_id):
             return MAIN_MENU
 
         keyboard = []
@@ -924,7 +1012,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ADMIN_PANEL
 
     elif data == 'change_referral_reward':
-        if user_id != ADMIN_ID:
+        if not is_admin(user_id):
             return MAIN_MENU
 
         db = load_database()
@@ -941,7 +1029,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Server management
     elif data.startswith('toggle_server_'):
-        if user_id != ADMIN_ID:
+        if not is_admin(user_id):
             return MAIN_MENU
 
         server_id = data.replace('toggle_server_', '')
@@ -955,7 +1043,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ADMIN_PANEL
 
     elif data.startswith('edit_price_'):
-        if user_id != ADMIN_ID:
+        if not is_admin(user_id):
             return MAIN_MENU
 
         location_type = data.replace('edit_price_', '')
@@ -1186,11 +1274,51 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             return MAIN_MENU
 
-    # Navigation
-    elif data == 'back_to_main':
+    # Support chat controls
+    elif data == 'exit_support':
+        # Exit support chat mode
+        if 'in_support_chat' in context.user_data:
+            del context.user_data['in_support_chat']
+        
         await query.edit_message_text(
             "🏠 منوی اصلی\n\nلطفا یک گزینه را انتخاب کنید:",
-            reply_markup=main_menu_keyboard()
+            reply_markup=main_menu_keyboard(user_id)
+        )
+        return MAIN_MENU
+        
+    elif data == 'continue_support':
+        # Stay in support chat mode
+        await query.edit_message_text(
+            "💬 لطفا پیام جدید خود را برای پشتیبانی ارسال کنید:",
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 بازگشت به منوی اصلی", callback_data='exit_support')]])
+        )
+        return SUPPORT
+        
+    elif data.startswith('reply_to_user_'):
+        if not is_admin(user_id):
+            return MAIN_MENU
+            
+        target_user_id = int(data.replace('reply_to_user_', ''))
+        context.user_data['admin_action'] = 'reply_to_user'
+        context.user_data['reply_to_user_id'] = target_user_id
+        
+        await query.edit_message_text(
+            f"📤 در حال پاسخ به کاربر {target_user_id}\n\n"
+            "لطفا پاسخ خود را بنویسید:",
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 لغو", callback_data='back_to_admin')]])
+        )
+        
+        return ADMIN_PANEL
+    
+    # Navigation
+    elif data == 'back_to_main':
+        # Also clear support chat mode if exists
+        if 'in_support_chat' in context.user_data:
+            del context.user_data['in_support_chat']
+            
+        await query.edit_message_text(
+            "🏠 منوی اصلی\n\nلطفا یک گزینه را انتخاب کنید:",
+            reply_markup=main_menu_keyboard(user_id)
         )
         return MAIN_MENU
 
@@ -1524,8 +1652,8 @@ async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 return ADMIN_PANEL
 
         elif action == 'add_new_admin':
-            if user_id != ADMIN_ID:  # Only main admin can add other admins
-                return ADMIN_PANEL
+            if not is_admin(user_id):  # Any admin can add other admins
+                return MAIN_MENU
 
             try:
                 new_admin_id = int(text.strip())
@@ -1675,49 +1803,164 @@ async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 )
                 return ADMIN_PANEL
 
-                # حذف بلوک except تکراری
+        elif action == 'reply_to_user':
+            # Admin is replying to a user's support message
+            try:
+                target_user_id = context.user_data.get('reply_to_user_id')
+                
+                if not target_user_id:
+                    await update.message.reply_text(
+                        "❌ خطا: شناسه کاربر برای پاسخ یافت نشد.",
+                        reply_markup=admin_panel_keyboard()
+                    )
+                    del context.user_data['admin_action']
+                    return ADMIN_PANEL
+                
+                # Send reply to user
+                await context.bot.send_message(
+                    chat_id=target_user_id,
+                    text=f"📞 پاسخ پشتیبانی:\n\n{text}"
+                )
+                
+                await update.message.reply_text(
+                    f"✅ پاسخ شما به کاربر {target_user_id} ارسال شد.",
+                    reply_markup=admin_panel_keyboard()
+                )
+                
+                # Clear user data
+                if 'admin_action' in context.user_data:
+                    del context.user_data['admin_action']
+                if 'reply_to_user_id' in context.user_data:
+                    del context.user_data['reply_to_user_id']
+                
+                return ADMIN_PANEL
+                
+            except Exception as e:
+                logger.error(f"Error in replying to user: {e}")
+                await update.message.reply_text(
+                    f"❌ خطا در ارسال پاسخ: {e}",
+                    reply_markup=admin_panel_keyboard()
+                )
+                return ADMIN_PANEL
 
     # Handle support messages from users
-    if update.message.chat.type == 'private':
-        # Forward message to admin
+    if update.message.chat.type == 'private' and context.user_data.get('in_support_chat', False):
+        # User is in support chat mode
         if user_id != ADMIN_ID:
             try:
-                await context.bot.forward_message(
+                # Forward to main admin
+                forwarded_msg = await context.bot.forward_message(
                     chat_id=ADMIN_ID,
                     from_chat_id=update.message.chat_id,
                     message_id=update.message.message_id
                 )
+                
+                # Add reply button for admin
+                reply_keyboard = [
+                    [InlineKeyboardButton("📤 پاسخ به کاربر", callback_data=f"reply_to_user_{user_id}")]
+                ]
+                
+                # Store user ID for context
+                await context.bot.send_message(
+                    chat_id=ADMIN_ID,
+                    text=f"👤 شناسه کاربر: {user_id}",
+                    reply_to_message_id=forwarded_msg.message_id,
+                    reply_markup=InlineKeyboardMarkup(reply_keyboard)
+                )
+                
+                # Also forward to other admins
+                db = load_database()
+                if 'admins' in db['settings']:
+                    for admin_id in db['settings']['admins']:
+                        if str(admin_id) != str(ADMIN_ID):  # Skip main admin
+                            try:
+                                forwarded_to_other = await context.bot.forward_message(
+                                    chat_id=int(admin_id),
+                                    from_chat_id=update.message.chat_id,
+                                    message_id=update.message.message_id
+                                )
+                                
+                                # Add reply button for other admins
+                                await context.bot.send_message(
+                                    chat_id=int(admin_id),
+                                    text=f"👤 شناسه کاربر: {user_id}",
+                                    reply_to_message_id=forwarded_to_other.message_id,
+                                    reply_markup=InlineKeyboardMarkup(reply_keyboard)
+                                )
+                            except Exception as e:
+                                logger.error(f"Failed to forward to admin {admin_id}: {e}")
 
+                # Confirm message received
                 await update.message.reply_text(
                     "✅ پیام شما به پشتیبانی ارسال شد. در اسرع وقت پاسخ داده خواهد شد.",
-                    reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 بازگشت به منوی اصلی", callback_data='back_to_main')]])
+                    reply_markup=InlineKeyboardMarkup([
+                        [InlineKeyboardButton("📤 ارسال پیام دیگر", callback_data="continue_support")],
+                        [InlineKeyboardButton("🔙 بازگشت به منوی اصلی", callback_data="exit_support")]
+                    ])
                 )
             except Exception as e:
                 logger.error(f"Failed to forward message to admin: {e}")
                 await update.message.reply_text(
                     "❌ خطا در ارسال پیام به پشتیبانی. لطفا بعدا دوباره تلاش کنید.",
-                    reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 بازگشت به منوی اصلی", callback_data='back_to_main')]])
+                    reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 بازگشت به منوی اصلی", callback_data="exit_support")]])
                 )
         else:
             # Admin replying to a forwarded message
-            if update.message.reply_to_message and update.message.reply_to_message.forward_from:
-                target_user_id = update.message.reply_to_message.forward_from.id
+            is_reply = update.message.reply_to_message is not None
+            
+            # Check for user ID mention in the previous message
+            user_id_to_reply = None
+            
+            if is_reply:
+                if update.message.reply_to_message.forward_from:
+                    # Traditional way - only works if user hasn't restricted forwards
+                    user_id_to_reply = update.message.reply_to_message.forward_from.id
+                elif update.message.reply_to_message.text and "شناسه کاربر:" in update.message.reply_to_message.text:
+                    # Extract from our custom message
+                    try:
+                        user_id_text = update.message.reply_to_message.text.split("شناسه کاربر:")[1].strip()
+                        user_id_to_reply = int(user_id_text)
+                    except Exception as e:
+                        logger.error(f"Failed to extract user ID from text: {e}")
+                        
+                # Check previous message for ID if nothing found yet
+                if not user_id_to_reply and update.message.reply_to_message.reply_to_message:
+                    prev_msg = update.message.reply_to_message.reply_to_message
+                    if prev_msg.forward_from:
+                        user_id_to_reply = prev_msg.forward_from.id
+            
+            if user_id_to_reply:
                 try:
                     await context.bot.send_message(
-                        chat_id=target_user_id,
+                        chat_id=user_id_to_reply,
                         text=f"📞 پاسخ پشتیبانی:\n\n{text}"
                     )
 
                     await update.message.reply_text(
-                        "✅ پاسخ شما ارسال شد.",
+                        f"✅ پاسخ شما به کاربر {user_id_to_reply} ارسال شد.",
                         reply_markup=admin_panel_keyboard()
                     )
                 except Exception as e:
-                    logger.error(f"Failed to send admin reply to user {target_user_id}: {e}")
+                    logger.error(f"Failed to send admin reply to user {user_id_to_reply}: {e}")
                     await update.message.reply_text(
                         f"❌ خطا در ارسال پاسخ: {e}",
                         reply_markup=admin_panel_keyboard()
                     )
+            elif is_reply:
+                # The admin replied to a message but we couldn't extract user ID
+                await update.message.reply_text(
+                    "⚠️ نمی‌توان شناسه کاربر را از این پیام استخراج کرد.\n"
+                    "لطفا از دکمه «پاسخ به کاربر» استفاده کنید یا به پیامی پاسخ دهید که شناسه کاربر را نمایش می‌دهد.",
+                    reply_markup=admin_panel_keyboard()
+                )
+    elif update.message.chat.type == 'private' and data.get('admin_action') != 'reply_to_user':
+        # This is a regular user message (not in support chat)
+        # Redirect user to start command or support section
+        if user_id != ADMIN_ID:  # Skip for admin
+            await update.message.reply_text(
+                "برای استفاده از ربات لطفا از منوی زیر گزینه مورد نظر خود را انتخاب کنید.",
+                reply_markup=main_menu_keyboard(user_id)
+            )
 
     return MAIN_MENU
 
@@ -1874,6 +2117,9 @@ def main():
             ],
             REFERRAL: [
                 CallbackQueryHandler(button_handler)
+            ],
+            ABOUT_US: [
+                CallbackQueryHandler(button_handler)
             ]
         },
         fallbacks=[CommandHandler('start', start)]
@@ -1881,8 +2127,11 @@ def main():
 
     application.add_handler(conv_handler)
 
-    # Start the bot
-    application.run_polling()
+    # Start the bot in polling mode
+    print("Running in polling mode")
+    
+    # Use the non-awaitable method to run the bot (handles the event loop internally)
+    application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == '__main__':
     main()
