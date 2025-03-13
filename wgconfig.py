@@ -111,6 +111,7 @@ def generate_wireguard_config(location_type, locations):
 PrivateKey = {private_key}
 Address = {address_fixed1}, {address_fixed2}, {address_ipv4}, {address_ipv6_1}, {address_ipv6_2}
 DNS = {dns_fixed}, {dns_ipv4}, {dns_ipv6}
+MTU = 1480
 
 [Peer]
 PublicKey = {public_key}
