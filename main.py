@@ -13,8 +13,8 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 logger = logging.getLogger(__name__)
 
 # Configuration
-TOKEN = "7577432090:AAG9sN1ILuTsr8TDQwuBN-_nDWTTzfSUmVg"
-ADMIN_ID = 7240662021
+TOKEN = "7881861405:AAEwChWabAGyUL-3e9qMEFXGFcsWdvllSws"
+ADMIN_ID = 7102150019
 DB_FILE = "database.json"
 
 # Function to check if user is an admin
