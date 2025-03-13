@@ -33,8 +33,8 @@ DEFAULT_REFERRAL_REWARD = 2000
 from range import LOCATIONS
 
 # Card information for payments
-CARD_NUMBER = "6219861943084037"
-CARD_HOLDER = "نام و نام خانوادگی"
+CARD_NUMBER = "6104338755812076"
+CARD_HOLDER = "محمدرضا نوروزی"
 
 # Database initialization
 def init_database():
